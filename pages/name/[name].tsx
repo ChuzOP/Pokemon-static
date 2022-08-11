@@ -10,17 +10,18 @@ import {
   Container,
   Row,
 } from "@nextui-org/react";
-import confetti from 'canvas-confetti'
+import confetti from "canvas-confetti";
 
 import { Layout } from "../../components/layouts";
-import { localFavorites, getPokemonInfo } from "../../utils";
-import { Pokemon } from "../../interfaces";
+import { getPokemonInfo, localFavorites } from "../../utils";
+import { Pokemon, PokemonList } from "../../interfaces";
+import { pokeApi } from "../../api";
 
 interface Props {
   pokemon: Pokemon;
 }
 
-const PokePage: NextPage<Props> = ({ pokemon }) => {
+const PokemonByNamePage: NextPage<Props> = ({ pokemon }) => {
   const [isInFavorites, setIsInFavorites] = useState(false);
 
   useEffect(() => {
@@ -31,7 +32,7 @@ const PokePage: NextPage<Props> = ({ pokemon }) => {
     localFavorites.toogleFavorite(pokemon.id);
     setIsInFavorites(!isInFavorites);
 
-    var colors = ['#bb0000', '#ffffff'];
+    var colors = ["#bb0000", "#ffffff"];
 
     if (!isInFavorites) {
       confetti({
@@ -39,8 +40,8 @@ const PokePage: NextPage<Props> = ({ pokemon }) => {
         angle: 120,
         spread: 95,
         origin: { x: 1 },
-        colors: colors
-      })
+        colors: colors,
+      });
     }
   };
 
@@ -184,24 +185,25 @@ const PokePage: NextPage<Props> = ({ pokemon }) => {
 export const getStaticPaths: GetStaticPaths = async (ctx) => {
   // your fetch function here
 
-  const pokePages = [...Array(151)].map((value, index) => `${index + 1}`); //funcion para crear un array con 151 numeros, se podrian usar otras funcionalidades (while, for ...)
+  const {data} = await pokeApi.get<PokemonList>('pokemon?limit=151');  // traigo 151 elementos de la pokeAPI
+  const pokeNames: string[] = data.results.map( pokemon => pokemon.name) //por cada elemento en mi array de strings de la pokeApi quiero que me de el nombre
 
   return {
-    paths: pokePages.map((id) => ({
-      params: { id },
+    paths: pokeNames.map((name) => ({
+      params: { name },
     })),
     fallback: false,
   };
 };
 
 export const getStaticProps: GetStaticProps = async ({ params }) => {
-  const { id } = params as { id: string }; // el "as" de aqui es la manera en la que nosotros tiparemos los params, de otra forma seria más grande y poco legible
+  const { name } = params as { name: string }; // el "as" de aqui es la manera en la que nosotros tiparemos los params, de otra forma seria más grande y poco legible
 
   return {
     props: {
-      pokemon: await getPokemonInfo( id )
+      pokemon: await getPokemonInfo( name )
     },
   };
 };
 
-export default PokePage;
+export default PokemonByNamePage;
